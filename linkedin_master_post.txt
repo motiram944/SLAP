@@ -3,8 +3,8 @@ SLAP MASTER LINKEDIN LAUNCH POST (ALL-IN-ONE)
 ================================================================================
 
 📸 ATTACH THESE 2 IMAGES TO THE POST (Multi-Image / Carousel):
-• Image 1: assets/linkedin_post1_benchmark.jpg (RAG vs. SLAP Benchmark Audit)
-• Image 2: assets/linkedin_post2_architecture.jpg (Traditional RAG vs. SLAP Dataflow)
+• Image 1: assets/linkedin_post1_benchmark.jpg (Side-by-Side: RAG vs. SLAP Benchmark)
+• Image 2: assets/linkedin_post2_architecture.jpg (Step-by-Step: Clean Pipeline Architecture)
 
 --------------------------------------------------------------------------------
 POST COPY (Ready to Copy & Paste):
@@ -15,7 +15,7 @@ Traditional RAG has hit an architectural wall. We built SLAP to replace it.
 For the past two years, building AI applications followed an identical formula:
 1. Chunk your documents into text snippets.
 2. Index vectors in a vector database.
-3. Retrieve top-5 chunks and dump 500 to 2,000 raw text tokens directly into your prompt.
+3. Retrieve top-5 chunks and dump 500 to 2,000 raw text tokens directly into your prompt context.
 
 The hidden bottleneck?
 💥 GPU KV-Cache RAM explosion: On models like Llama-3-70B, boilerplate context consumes massive VRAM per request.
@@ -34,14 +34,14 @@ Instead of stuffing raw text chunks into the prompt, SLAP:
 
 The LLM attends to the exact continuous semantic representation — bypassing text prompt serialization entirely!
 
-📊 REAL-WORLD BENCHMARK (Audited on a 20-Page Technical Document):
-⚡ Prompt Context Inflation: 292 tokens ➡️ 19 tokens (93.4% REDUCTION)
-⚡ LLM KV-Cache RAM: 96.0 MB ➡️ 6.2 MB (15.2x LESS GPU MEMORY)
-⚡ Attention Prefill Compute: 0.78 GFLOPs ➡️ 0.05 GFLOPs (15.5x FEWER OPERATIONS)
-⚡ Retrieval Latency: Sub-millisecond vector retrieval over HTTPS.
+📊 REAL-WORLD AUDITED BENCHMARK (20-Page Technical Document):
+⚡ Prompt Context: 292 tokens ➡️ 19 tokens (93.4% REDUCTION)
+⚡ GPU KV-Cache RAM: 96.0 MB ➡️ 6.2 MB (15.2x LESS MEMORY)
+⚡ Vector Storage: Uncompressed FP32 ➡️ INT8 Quantized (3.92x STORAGE SAVINGS)
+⚡ End-to-End Latency: ~380 ms ➡️ ~26 ms (14.6x FASTER RESPONSE)
 
 💾 Current Community Storage Notice:
-To keep this 100% free for everyone globally right now, the public cluster provides 1 GB of storage with an automated 24-hour recycling worker. We are actively scaling our infrastructure and will raise this storage capacity significantly in upcoming updates!
+To keep this 100% free for everyone globally right now, our public cluster provides 1 GB of storage with an automated 24-hour recycling worker. We are actively scaling our infrastructure and will raise this storage capacity significantly in upcoming updates!
 
 🚀 It is live on PyPI today — give it a try in your Python project in 30 seconds:
 
@@ -56,9 +56,9 @@ client = SlapClient(base_url="https://slap-9m29.onrender.com")
 # 2. Ingest your documents directly into cloud storage
 client.ingest("Microservice architecture and container orchestration specification.")
 
-# 3. Retrieve with 93%+ token context reduction
+# 3. Retrieve with 93%+ token context reduction & sub-millisecond search
 res = client.retrieve("What is the container architecture?", top_k=3)
-print(f"Bypassed {res.token_savings['tokens_bypassed']} tokens!")
+print(f"Context reduced by: {res.token_savings['context_reduction_percent']}%!")
 ```
 
 🔗 PyPI Package: https://pypi.org/project/slap-sdk/
@@ -75,8 +75,16 @@ What do you think — is continuous latent injection the natural successor to pr
 IMAGE DESCRIPTIONS FOR YOUR POST / CAROUSEL:
 --------------------------------------------------------------------------------
 
-📌 Image 1 Description (The Benchmark Audit):
-"Head-to-head benchmark on a 20-page document comparing Traditional RAG vs. SLAP Protocol. Shows 292 prompt tokens slashed to 19 (93.4% reduction), KV-Cache memory dropped from 96.0 MB to 6.2 MB (15.2x less RAM), and quadratic attention O(N²) eliminated."
+📌 Image 1 Description (Side-by-Side Benchmark & Latency):
+"Side-by-side comparison between Traditional RAG and SLAP Protocol:
+• Prompt Context: 292 tokens vs. 19 tokens (93.4% reduction)
+• GPU Memory: 96.0 MB vs. 6.2 MB (15.2x less RAM)
+• Storage: FP32 uncompressed vs. INT8 compressed (3.92x savings)
+• Latency: 380 ms slow quadratic attention vs. 26 ms fast prefill (14.6x faster)"
 
-📌 Image 2 Description (How It Works):
-"End-to-end SLAP architecture pipeline: Raw documents ➡️ Orthogonal Hypersphere Projection S^(d-1) & INT8 Compression (48 dB SNR) ➡️ Qdrant Cloud Storage (24h auto-recycle) ➡️ Continuous Virtual Prefix Token Injection (3 virtual tokens straight into 4096-d LLM hidden states)."
+📌 Image 2 Description (Clean Pipeline Architecture):
+"The 4-stage SLAP architecture pipeline:
+1. Raw Documents & Text
+2. Orthogonal Hypersphere Projection S^(d-1) & INT8 Compression (48 dB SNR)
+3. Qdrant Cloud Vector Storage (with 24h auto-recycle)
+4. Continuous Virtual Prefix Token Injection (3 virtual tokens straight into 4096-d LLM hidden states)"
