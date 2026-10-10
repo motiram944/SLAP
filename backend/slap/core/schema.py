@@ -79,10 +79,11 @@ class IngestResponse(BaseModel):
 
 class RetrieveRequest(BaseModel):
     query: str = Field(..., min_length=1, description="Natural language search query")
-    drift_threshold: float = Field(default=0.82, ge=0.0, le=1.0, description="Cosine drift gating threshold τ")
+    drift_threshold: float = Field(default=0.0, ge=0.0, le=1.0, description="Cosine drift gating threshold (0.0 = permissive, all matches returned)")
     query_entities: Optional[List[str]] = Field(default=None, description="Optional explicit entity filters")
     top_k: int = Field(default=5, ge=1, le=50, description="Maximum matches to return")
-    max_epistemic_variance: float = Field(default=0.05, description="Maximum allowable epistemic variance Σ_e")
+    max_epistemic_variance: float = Field(default=1.0, description="Maximum allowable epistemic variance (1.0 = permissive)")
+
 
 
 class RetrievedMatch(BaseModel):

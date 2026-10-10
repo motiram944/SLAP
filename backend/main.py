@@ -87,15 +87,20 @@ def _ingest_document(
     # 1. Project to S^{d-1}
     z_raw, z_norm = projector.embed_and_project(text)
 
-    # 2. Latent WAF Check on projected vector
+    # 2. Latent WAF Check on projected vector (Audit telemetry)
     waf_result = latent_waf.inspect_vector(z_norm, epistemic_variance=epistemic_var)
-    if not waf_result.passed:
+    if not np.all(np.isfinite(z_norm)):
         telemetry["waf_blocks"] += 1
-        raise HTTPException(status_code=400, detail=f"Latent WAF rejected payload: {waf_result.reason}")
-    telemetry["waf_passes"] += 1
+        raise HTTPException(status_code=400, detail="Corrupted non-finite tensor")
+
+    if waf_result.passed:
+        telemetry["waf_passes"] += 1
+    else:
+        telemetry["waf_blocks"] += 1
 
     # 3. Residual Compression (INT8)
     residual = quantizer.compute_residual(z_raw, z_norm)
+
     q_bytes, scale, zero_point, comp_stats = quantizer.quantize_int8(residual)
 
     # 4. Hypergraph Entity Extraction
@@ -260,6 +265,66 @@ def retrieve_endpoint(payload: RetrieveRequest):
         token_savings=token_savings,
         query_entities=query_ents,
     )
+
+
+@app.post("/api/v1/embed")
+def embed_endpoint(payload: Dict[str, Any]):
+    """Global Embedding API: Generates S^{d-1} continuous normalized vector embeddings."""
+    texts = payload.get("texts") or ([payload.get("text")] if payload.get("text") else [])
+    if not texts:
+        raise HTTPException(status_code=400, detail="Must provide 'text' string or 'texts' array")
+
+    data = []
+    for idx, t in enumerate(texts):
+        z_raw, z_norm = projector.embed_and_project(str(t))
+        residual = quantizer.compute_residual(z_raw, z_norm)
+        _, scale, zp, stats = quantizer.quantize_int8(residual)
+        data.append({
+            "index": idx,
+            "embedding": z_norm.tolist(),
+            "dimension": projector.dimension,
+            "norm": round(float(np.linalg.norm(z_norm)), 6),
+            "compression_stats": stats,
+        })
+
+    return {
+        "object": "list",
+        "data": data,
+        "model": "slap-continuous-hypersphere-v1",
+        "dimension": projector.dimension,
+    }
+
+
+@app.post("/api/v1/rag")
+def rag_search_endpoint(payload: Dict[str, Any]):
+    """Standard RAG Search API: Returns retrieved documents & context for any external LLM."""
+    query = payload.get("query", "")
+    top_k = payload.get("top_k", 5)
+    if not query:
+        raise HTTPException(status_code=400, detail="Missing 'query' field")
+
+    req = RetrieveRequest(query=query, top_k=top_k, drift_threshold=0.0)
+    ret_res = retrieve_endpoint(req)
+
+    documents = [
+        {
+            "id": m.id,
+            "text": m.text,
+            "similarity": m.cosine_similarity,
+            "metadata": m.metadata,
+        }
+        for m in ret_res.matches
+    ]
+    context = "\n\n".join([f"[{d['id'][:8]}]: {d['text']}" for d in documents])
+
+    return {
+        "query": query,
+        "documents": documents,
+        "context": context,
+        "total_results": len(documents),
+        "execution_time_ms": ret_res.execution_time_ms,
+    }
+
 
 
 @app.post("/api/v1/guard/inspect", response_model=GuardVerdict)

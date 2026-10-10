@@ -151,9 +151,9 @@ class QdrantSlapStore:
                 z_full = ResidualQuantizer.reconstruct_full_vector(z_norm, r_recon)
                 recon_norm = float(np.linalg.norm(z_full))
 
-            # Latent Guard evaluation
-            passed_drift = cos_sim >= drift_threshold
-            passed_variance = epistemic_var <= max_variance
+            # Latent Guard evaluation (Permissive if drift_threshold <= 0.0)
+            passed_drift = (cos_sim >= drift_threshold) if drift_threshold > 0.0 else True
+            passed_variance = (epistemic_var <= max_variance) if max_variance < 1.0 else True
             passed_gate = passed_drift and passed_variance
 
             if not passed_drift:
@@ -161,7 +161,8 @@ class QdrantSlapStore:
             elif not passed_variance:
                 verdict = f"BLOCKED: Epistemic variance excessive ({epistemic_var:.4f} > {max_variance:.4f})"
             else:
-                verdict = "VERIFIED: Continuous latent admissible"
+                verdict = f"VERIFIED: Score={cos_sim:.4f} admissible"
+
 
             edges_data = [HyperEdge(**e) for e in payload.get("edges", [])]
 
