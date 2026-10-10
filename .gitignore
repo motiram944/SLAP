@@ -53,3 +53,7 @@ yarn-error.log*
 .pytest_cache/
 .coverage
 htmlcov/
+
+# Social Media Drafts
+linkedin*.txt
+

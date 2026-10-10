@@ -1,0 +1,49 @@
+{
+  "dataset": "20-Page Sample PDF Document (Sample-Files.com)",
+  "avg_traditional_tokens": 292,
+  "avg_slap_tokens": 19,
+  "avg_token_reduction_percent": 93.4,
+  "avg_kv_ram_savings_multiplier": 15.2,
+  "avg_prefill_flops_speedup_multiplier": 15.5,
+  "results": [
+    {
+      "query": "Which PDF compression methods are supported and what are their algorithms?",
+      "trad_tokens": 293,
+      "slap_tokens": 17,
+      "token_reduction_pct": 94.2,
+      "trad_kv_mb": 96.0,
+      "slap_kv_mb": 5.6,
+      "kv_reduction_x": 17.2,
+      "trad_gflops": 0.78,
+      "slap_gflops": 0.04,
+      "flops_reduction_x": 17.5,
+      "slap_latency_ms": 534.12
+    },
+    {
+      "query": "What are the common HTTP status codes for errors and redirection in the appendix?",
+      "trad_tokens": 298,
+      "slap_tokens": 21,
+      "token_reduction_pct": 93.0,
+      "trad_kv_mb": 97.6,
+      "slap_kv_mb": 6.9,
+      "kv_reduction_x": 14.2,
+      "trad_gflops": 0.8,
+      "slap_gflops": 0.06,
+      "flops_reduction_x": 14.4,
+      "slap_latency_ms": 2188.89
+    },
+    {
+      "query": "What libraries are recommended for PDF parsing in software development and quality assurance?",
+      "trad_tokens": 286,
+      "slap_tokens": 20,
+      "token_reduction_pct": 93.0,
+      "trad_kv_mb": 93.7,
+      "slap_kv_mb": 6.6,
+      "kv_reduction_x": 14.3,
+      "trad_gflops": 0.76,
+      "slap_gflops": 0.05,
+      "flops_reduction_x": 14.5,
+      "slap_latency_ms": 996.69
+    }
+  ]
+}
