@@ -12,6 +12,9 @@ import numpy as np
 from qdrant_client import QdrantClient
 from qdrant_client.http import models as qmodels
 
+from dotenv import load_dotenv
+load_dotenv()
+
 from slap.core.schema import CanonicalLatent, HyperEdge, RetrievedMatch, SlapEnvelope
 from slap.core.quantizer import ResidualQuantizer
 
@@ -21,22 +24,29 @@ class QdrantSlapStore:
 
     COLLECTION_NAME = "slap_latents"
 
-    def __init__(self, url: Optional[str] = None, dimension: int = 384):
+    def __init__(self, url: Optional[str] = None, api_key: Optional[str] = None, dimension: int = 384):
         self.dimension = dimension
         self.url = url or os.getenv("QDRANT_URL", "http://localhost:6333")
+        self.api_key = api_key or os.getenv("QDRANT_API_KEY")
         self.client = self._init_client()
         self._ensure_collection()
 
     def _init_client(self) -> QdrantClient:
         """Attempt connection to external Qdrant instance; fallback to high-speed in-memory engine."""
         try:
-            client = QdrantClient(url=self.url, timeout=1.5, check_compatibility=False)
+            client = QdrantClient(
+                url=self.url,
+                api_key=self.api_key,
+                timeout=10.0,
+                check_compatibility=False
+            )
             # Test connectivity
             client.get_collections()
             return client
         except Exception:
             # Embedded in-memory Qdrant client provides identical API and vector search
             return QdrantClient(":memory:", check_compatibility=False)
+
 
 
     def _ensure_collection(self) -> None:

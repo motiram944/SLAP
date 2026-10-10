@@ -13,7 +13,11 @@ import time
 import uuid
 from typing import Any, Dict, List, Optional
 import numpy as np
+from dotenv import load_dotenv
+load_dotenv()
+
 from fastapi import FastAPI, HTTPException, Query
+
 
 from fastapi.middleware.cors import CORSMiddleware
 
