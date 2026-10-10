@@ -9,6 +9,7 @@ Coordinates the 5 core subsystems:
 """
 
 from __future__ import annotations
+import asyncio
 import time
 import uuid
 from typing import Any, Dict, List, Optional
@@ -407,6 +408,50 @@ def graph_subgraph_endpoint(doc_ids: Optional[str] = Query(None)):
     return graph_index.get_subgraph(target_ids)
 
 
+@app.on_event("startup")
+async def start_periodic_cleanup():
+    """Background worker that sweeps Qdrant hourly to auto-purge vectors older than 24 hours."""
+    async def _cleanup_loop():
+        while True:
+            try:
+                purged = qdrant_store.cleanup_expired(max_age_hours=24.0)
+                if purged > 0:
+                    print(f"[SLAP Storage TTL] Auto-purged {purged} expired vectors (>24h).")
+            except Exception as e:
+                print(f"[SLAP Storage TTL] Error during background cleanup: {e}")
+            await asyncio.sleep(3600)  # Check every hour
+
+    asyncio.create_task(_cleanup_loop())
+
+
+@app.post("/api/v1/storage/cleanup")
+def storage_cleanup_endpoint(
+    max_age_hours: float = Query(24.0, description="Purge vectors older than this many hours")
+):
+    """Purge vectors older than max_age_hours (default: 24h) to recycle free tier storage."""
+    purged_count = qdrant_store.cleanup_expired(max_age_hours=max_age_hours)
+    return {
+        "status": "SUCCESS",
+        "purged_count": purged_count,
+        "max_age_hours": max_age_hours,
+        "remaining_vectors": qdrant_store.count(),
+        "message": f"Purged {purged_count} vectors older than {max_age_hours} hours. Storage recycled.",
+    }
+
+
+@app.post("/api/v1/storage/reset")
+def storage_reset_endpoint():
+    """Completely wipe all vectors and hypergraph links to empty storage and reuse fresh."""
+    wiped_count = qdrant_store.reset_collection()
+    graph_index.clear()
+    return {
+        "status": "SUCCESS",
+        "wiped_vectors": wiped_count,
+        "current_vectors": qdrant_store.count(),
+        "message": "Storage completely emptied and recycled for fresh reuse.",
+    }
+
+
 @app.get("/api/v1/stats")
 def stats_endpoint():
     return {
@@ -416,3 +461,4 @@ def stats_endpoint():
         "projection_dim": projector.dimension,
         "llm_hidden_dim": bridge.llm_hidden_dim,
     }
+

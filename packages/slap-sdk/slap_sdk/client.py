@@ -118,3 +118,16 @@ class SlapClient:
         resp = self._http.post("/api/v1/guard/inspect", json=req.model_dump())
         resp.raise_for_status()
         return GuardVerdict(**resp.json())
+
+    def cleanup(self, max_age_hours: float = 24.0) -> Dict[str, Any]:
+        """Purge vectors older than max_age_hours to recycle free tier storage."""
+        resp = self._http.post("/api/v1/storage/cleanup", params={"max_age_hours": max_age_hours})
+        resp.raise_for_status()
+        return resp.json()
+
+    def reset_storage(self) -> Dict[str, Any]:
+        """Completely wipe all vectors and empty storage for fresh reuse."""
+        resp = self._http.post("/api/v1/storage/reset")
+        resp.raise_for_status()
+        return resp.json()
+

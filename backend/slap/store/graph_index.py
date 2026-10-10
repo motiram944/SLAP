@@ -107,3 +107,10 @@ class TopologicalGraphIndex:
             "unique_entities": len(self.entity_to_docs),
             "total_adjacency_relations": sum(len(v) for v in self.adj.values()),
         }
+
+    def clear(self) -> None:
+        """Clear all in-memory graph entities and doc edges."""
+        self.doc_to_edges.clear()
+        self.entity_to_docs.clear()
+        self.adj.clear()
+

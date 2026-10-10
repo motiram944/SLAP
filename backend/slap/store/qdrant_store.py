@@ -193,6 +193,61 @@ class QdrantSlapStore:
         except Exception:
             return 0
 
+    def cleanup_expired(self, max_age_hours: float = 24.0) -> int:
+        """Purge vectors older than `max_age_hours` to keep the 1 GB storage reused endlessly."""
+        import time
+        now_ns = time.time_ns()
+        cutoff_ns = now_ns - int(max_age_hours * 3600 * 1_000_000_000)
+        count_before = self.count()
+
+        try:
+            self.client.delete(
+                collection_name=self.COLLECTION_NAME,
+                points_selector=qmodels.FilterSelector(
+                    filter=qmodels.Filter(
+                        must=[
+                            qmodels.FieldCondition(
+                                key="timestamp_ns",
+                                range=qmodels.Range(lt=cutoff_ns),
+                            )
+                        ]
+                    )
+                ),
+            )
+            count_after = self.count()
+            return max(0, count_before - count_after)
+        except Exception:
+            try:
+                # Fallback: scroll and delete expired points
+                scroll_res = self.client.scroll(
+                    collection_name=self.COLLECTION_NAME,
+                    with_payload=True,
+                    limit=1000,
+                )
+                expired_ids = [
+                    p.id for p in scroll_res[0]
+                    if p.payload and p.payload.get("timestamp_ns", 0) < cutoff_ns
+                ]
+                if expired_ids:
+                    self.client.delete(
+                        collection_name=self.COLLECTION_NAME,
+                        points_selector=qmodels.PointIdsList(points=expired_ids),
+                    )
+                    return len(expired_ids)
+            except Exception:
+                pass
+            return 0
+
+    def reset_collection(self) -> int:
+        """Completely wipe all stored vectors to make storage empty and ready for fresh reuse."""
+        count_before = self.count()
+        try:
+            self.client.delete_collection(collection_name=self.COLLECTION_NAME)
+        except Exception:
+            pass
+        self._ensure_collection()
+        return count_before
+
     @staticmethod
     def _is_valid_uuid(val: str) -> bool:
         try:
@@ -200,3 +255,4 @@ class QdrantSlapStore:
             return True
         except ValueError:
             return False
+
