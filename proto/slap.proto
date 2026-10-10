@@ -1,0 +1,59 @@
+syntax = "proto3";
+
+package slap.v1;
+
+// Hypergraph Entity & Edge specification
+message HyperEdge {
+  string source = 1;
+  string relation = 2;
+  string target = 3;
+  map<string, string> properties = 4;
+  float confidence = 5;
+}
+
+// Canonical Latent Representation projected on S^{d-1} Hypersphere with Residual Delta
+message CanonicalLatent {
+  repeated float hypersphere_coord = 1;
+  bytes quantized_residual = 2;
+  float residual_scale = 3;
+  int32 residual_zero_point = 4;
+  float epistemic_variance = 5;
+  int32 dimension = 6;
+}
+
+// Full SLAP wire envelope encapsulating topology and continuous algebraic coordinates
+message SlapEnvelope {
+  string id = 1;
+  repeated HyperEdge edges = 2;
+  CanonicalLatent latent = 3;
+  string raw_digest = 4;
+  map<string, string> metadata = 5;
+  int64 timestamp_ns = 6;
+}
+
+// Retrieval query payload
+message RetrieveQuery {
+  string query_text = 1;
+  repeated string query_entities = 2;
+  float drift_threshold = 3;
+  int32 top_k = 4;
+  float max_epistemic_variance = 5;
+}
+
+// Retrieved document result with WAF telemetry and reconstructed state
+message RetrievedMatch {
+  string id = 1;
+  float cosine_similarity = 2;
+  float epistemic_variance = 3;
+  repeated HyperEdge edges = 4;
+  map<string, string> metadata = 5;
+  bool passed_drift_gate = 6;
+  string guard_verdict = 7;
+}
+
+message RetrieveResponse {
+  repeated RetrievedMatch matches = 1;
+  int32 total_candidates = 2;
+  int32 topological_pruned = 3;
+  float execution_time_ms = 4;
+}
