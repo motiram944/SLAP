@@ -272,8 +272,54 @@ def guard_inspect_endpoint(payload: GuardInspectRequest):
     )
 
 
+@app.post("/api/v1/query")
+async def query_with_gemini_pro(payload: RetrieveRequest):
+    """Retrieve with SLAP Latent WAF, and pass verified context to Google Gemini Pro."""
+    # 1. Run SLAP Continuous Retrieval
+    ret_response = retrieve_endpoint(payload)
+    verified = [m for m in ret_response.matches if m.passed_drift_gate]
+
+    gemini_key = os.getenv("GEMINI_API_KEY")
+    answer = ""
+
+    if not verified:
+        answer = "SLAP Latent WAF Alert: No documents passed the Cosine Drift Gate or Epistemic Covariance threshold. Query blocked from reaching Gemini to prevent hallucination."
+    elif gemini_key:
+        try:
+            import google.generativeai as genai
+            genai.configure(api_key=gemini_key)
+            model = genai.GenerativeModel("gemini-1.5-pro")
+            
+            context_text = "\n\n".join([f"[Source {i+1}]: {m.text}" for i, m in enumerate(verified)])
+            system_prompt = (
+                "You are an expert AI reasoning assistant backed by the SLAP (Semantic Latent-Algebraic Protocol). "
+                "Answer the user query accurately and comprehensively using strictly the verified context retrieved below.\n\n"
+                f"VERIFIED CONTEXT:\n{context_text}\n\n"
+                f"USER QUERY:\n{payload.query}"
+            )
+            response = model.generate_content(system_prompt)
+            answer = response.text
+        except Exception as e:
+            answer = f"Gemini Pro Execution Note: {str(e)}"
+    else:
+        answer = (
+            f"SLAP verified {len(verified)} continuous envelopes (passed Latent WAF). "
+            "To generate the final LLM response with Gemini Pro, set your GEMINI_API_KEY in backend/.env!"
+        )
+
+    return {
+        "answer": answer,
+        "matches": ret_response.matches,
+        "verified_count": len(verified),
+        "total_candidates": ret_response.total_candidates,
+        "token_savings": ret_response.token_savings,
+        "execution_time_ms": ret_response.execution_time_ms,
+    }
+
+
 @app.post("/api/v1/bridge/inject")
 def bridge_inject_endpoint(payload: Dict[str, Any]):
+
     """Project a continuous latent vector to LLM dimension and simulate KV cache injection."""
     vector = payload.get("vector", [])
     if not vector:
